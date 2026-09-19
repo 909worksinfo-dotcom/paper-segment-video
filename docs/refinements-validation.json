@@ -1,0 +1,69 @@
+{
+  "date": "2026-09-18",
+  "scope": [
+    "local speech prosody",
+    "Chinese LLM terminology",
+    "fast precise evidence underline"
+  ],
+  "checks": {
+    "syntax": "compileall, node --check, Ruff F passed",
+    "tests_passed": 49,
+    "plugin_manifest": "passed",
+    "original_14_scene_quotes": "all located with glyph coordinates"
+  },
+  "speech": {
+    "engine": "macOS Tingting",
+    "speed": 1.2,
+    "plain_test_seconds": 9.9976,
+    "classroom_test_seconds": 10.4249,
+    "same_question_pitch_median_hz": {
+      "plain": 228.6,
+      "relative_1_2": 235.3
+    },
+    "controls": "separate pbas/pmod/rate/slnc directives; no unsupported combined/format commands",
+    "naturalness": "Prosody controls verified in output audio; no human listening score or neural voice claim"
+  },
+  "highlight": {
+    "start_seconds": 0.15,
+    "trace_seconds": [
+      0.45,
+      1.5
+    ],
+    "maximum_completion_seconds": 1.65,
+    "repeated_quote": "prefer selected bounding box",
+    "hyphenated_quote": "cross-line glyph mapping verified",
+    "missing_quote": "explicit failure, no paragraph-wide fallback"
+  },
+  "generation": {
+    "job_id": "afc0698817b2402093c16eca11a51e8e",
+    "status": "ready",
+    "duration_seconds": 378.2,
+    "scenes": 15,
+    "knowledge_points": 13,
+    "covered_points": 13,
+    "scientific_review": {
+      "passed": true,
+      "issues": [],
+      "coverage_gaps": []
+    },
+    "highlight_refinement": {
+      "scene": 6,
+      "before": "removes this overlap and absolute",
+      "after": "removes this overlap and absolute positional embedding",
+      "source_match_verified": true,
+      "narration_and_knowledge_unchanged": true,
+      "review_scope": "Existing scientific review retained; only exact evidence underline expanded to complete the term"
+    },
+    "audio_verified": true,
+    "video_verified": true
+  },
+  "browser": {
+    "duration_seconds": 378.242667,
+    "chapter_seek_seconds": 141.905758,
+    "playing": true,
+    "ready_state": 4,
+    "width": 1280,
+    "height": 720,
+    "error": null
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "syntax": "compileall + node --check + Ruff passed",
+  "tests": 42,
+  "speed_measurement": {
+    "normal_seconds": 9.14425,
+    "fast_seconds": 7.623708333333333,
+    "speed_ratio": 1.1994490870038095,
+    "passed": true
+  },
+  "paste_job": "b79ddb1158db4658afbcb89230fa5708",
+  "neural_voice": {
+    "status": "blocked_not_enabled",
+    "reason": "Hugging Face Xet repeated TLS UnexpectedEof; direct weights download timed out; ModelScope fallback did not finish",
+    "local_reference": "BV1pu411o7BE 32–46 seconds",
+    "adapter": "implemented but not inference-validated",
+    "default_provider": "macos"
+  },
+  "browser_video": {
+    "job_id": "aff7b6d389fe4fa2b94123f27895bdfd",
+    "duration_seconds": 254.142667,
+    "video_width": 1280,
+    "ready_state": 4,
+    "chapter_seek_seconds": 79.819781,
+    "playing": true,
+    "error": null
+  }
+}

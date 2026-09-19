@@ -1,0 +1,40 @@
+[
+  {
+    "job_id": "db92e4795d604709824e840824078e64",
+    "title": "SWA 有界重放：用少量重算换持久缓存空间",
+    "page": 5,
+    "duration": 372.54,
+    "knowledge_points": 16,
+    "scenes": 13,
+    "codec": "h264",
+    "audio_codec": "aac",
+    "resolution": [
+      1280,
+      720
+    ],
+    "fps": 10.0,
+    "animated_frames_differ": true,
+    "audio_rms_dbfs": -18.0,
+    "sha256": "8640eb1ad11a1f17f0fab7a20ad419778647016c6a3968807a71a06d4ecb10f3",
+    "video_path": "/Users/bytedance/.local/share/paper-segment-video/data/jobs/db92e4795d604709824e840824078e64/lesson.mp4"
+  },
+  {
+    "job_id": "cc9d8594a46b40c586931fcc8e462492",
+    "title": "CED精读：解码器的全局KV从哪里来",
+    "page": 9,
+    "duration": 328.04,
+    "knowledge_points": 13,
+    "scenes": 12,
+    "codec": "h264",
+    "audio_codec": "aac",
+    "resolution": [
+      1280,
+      720
+    ],
+    "fps": 10.0,
+    "animated_frames_differ": true,
+    "audio_rms_dbfs": -18.0,
+    "sha256": "ee10a220e7881ce826f12656dcb4fac259eedd24ca5e20013bbb37a5f8596e3c",
+    "video_path": "/Users/bytedance/.local/share/paper-segment-video/data/jobs/cc9d8594a46b40c586931fcc8e462492/lesson.mp4"
+  }
+]

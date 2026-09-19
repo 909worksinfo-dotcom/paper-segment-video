@@ -1,0 +1,41 @@
+{
+  "duration": 17.5,
+  "timeline": [
+    {
+      "index": 0,
+      "start": 0.0,
+      "end": 8.0,
+      "title": "跨页选区 · 第一页",
+      "source_page": 11
+    },
+    {
+      "index": 1,
+      "start": 8.0,
+      "end": 17.5,
+      "title": "跨页选区 · 第二页",
+      "source_page": 12
+    }
+  ],
+  "flow_steps": [],
+  "video": "lesson.mp4",
+  "audio_verified": true,
+  "video_verified": true,
+  "speech_speed": 1.2,
+  "speech_provider": "edge-neural",
+  "speech_label": "云扬 · 沉稳男声 · AI 合成讲解 · 1.2×",
+  "python_tests": 74,
+  "native_browser_checks": [
+    "51 continuous pages",
+    "single character C",
+    "forward cross-page drag",
+    "reverse cross-page partial text",
+    "paragraph selection",
+    "figure rectangle"
+  ],
+  "source_pages": [
+    11,
+    12
+  ],
+  "live_port": 8767,
+  "notes": "17.5 秒功能合成片，不是论文解读成片；真实跨页任务单独保留原进度"
+}

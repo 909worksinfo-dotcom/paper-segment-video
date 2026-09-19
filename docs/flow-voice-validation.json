@@ -1,0 +1,41 @@
+{
+  "job_id": "e0398340b3e2413f996f929a9daf414b",
+  "duration_seconds": 309.2,
+  "video_size_bytes": 9021807,
+  "unit_tests_passed": 63,
+  "syntax_checks": [
+    "compileall",
+    "node --check",
+    "ruff F"
+  ],
+  "plugin_validated": true,
+  "scientific_review": {
+    "passed": true,
+    "issues": [],
+    "coverage_gaps": []
+  },
+  "knowledge_points": 13,
+  "dynamic_flow_scenes": 9,
+  "flow_steps": 21,
+  "all_flow_steps_word_aligned": true,
+  "audio_verified": true,
+  "video_verified": true,
+  "speech": {
+    "provider": "edge-neural",
+    "voice": "zh-CN-YunxiNeural",
+    "speed": 1.2,
+    "rate": "+20%",
+    "label": "中文神经男声 · AI 合成讲解 · 1.2×",
+    "remote_narration": true
+  },
+  "browser": {
+    "width": 1280,
+    "height": 720,
+    "ready_state": 4,
+    "media_error": null,
+    "chapter_playback": true,
+    "flow_click_paused": true,
+    "flow_seek_seconds": 152.735
+  },
+  "naturalness": "Neural male voice and conversational narration implemented; no claim of human indistinguishability"
+}

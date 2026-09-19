@@ -1,0 +1,10 @@
+fastapi==0.141.1
+uvicorn==0.53.0
+python-multipart==0.0.32
+PyMuPDF==1.28.2
+Pillow==12.3.0
+imageio-ffmpeg==0.6.0
+httpx==0.28.1
+jsonschema==4.26.0
+pytest==9.1.1
+edge-tts==7.2.8

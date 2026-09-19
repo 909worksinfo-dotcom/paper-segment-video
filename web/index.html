@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>模型技术视频讲解</title>
+    <link rel="icon" href="/icon.png?v=read-20260919" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <a class="skip" href="#reader">跳到论文阅读区</a>
+    <header>
+      <a class="brand" href="/"
+        ><span class="brand-symbol">读</span
+        ><span>模型技术视频讲解 <small>PAPER / MOTION</small></span></a
+      >
+      <div class="header-note">把一段论文，讲清楚</div>
+      <span class="local"><i></i> 本地工作室 <b>DEMO</b></span>
+    </header>
+    <div class="workspace">
+      <aside class="library">
+        <div class="section-label">你的阅读桌 <span>01</span></div>
+        <button id="uploadButton" class="upload">＋ 导入论文 PDF</button
+        ><input id="upload" type="file" accept="application/pdf,.pdf" hidden />
+        <label class="small-label" for="documentSelect">当前论文</label
+        ><select id="documentSelect" aria-label="选择论文"></select>
+        <div id="docMeta" class="meta"></div>
+        <div class="section-label pages-label">页码导航</div>
+        <nav id="pageList" aria-label="论文页面"></nav>
+        <div class="library-foot">
+          <span class="tiny-emblem">↗</span>
+          <p>从问题出发<br />回到原文与证据</p>
+          <small
+            >精读方法参考李沐公开论文讲解<br />中文合成配音 · 非真人复刻</small
+          >
+        </div>
+      </aside>
+      <main id="reader">
+        <div class="reader-heading">
+          <div>
+            <div class="eyebrow">READ CLOSELY. UNDERSTAND DEEPLY.</div>
+            <h1>每一段，都值得读懂<span>↘</span></h1>
+          </div>
+          <span id="pageBadge" class="page-badge">PDF</span>
+        </div>
+        <div class="reader-tools">
+          <div class="segmented">
+            <button id="textMode" class="active">自由选字</button><button id="paragraphMode">点选整段</button
+            ><button id="regionMode">框选图表 / 公式</button>
+          </div>
+          <div class="pager">
+            <button id="prev" aria-label="上一页">←</button
+            ><label
+              ><input
+                id="pageNumber"
+                type="number"
+                min="1"
+                value="1"
+                aria-label="跳转页码"
+              />
+              / <span id="pageCount">0</span></label
+            ><button id="next" aria-label="下一页">→</button>
+          </div>
+        </div>
+        <p id="readerHint" class="reader-hint">
+          拖动选择任意文字，可跨页连续选择；复制到主会话后发送讲解指令
+        </p>
+        <div id="paperScroll">
+          <div id="paperStage" data-mode="text"></div>
+          <div id="emptyPaper">
+            <span>⌁</span>
+            <h2>放一本论文在桌上</h2>
+            <p>导入 PDF 后，连续滚动并自由选字<br />也可以框选复杂公式和架构图</p>
+          </div>
+        </div>
+      </main>
+      <aside class="lesson-panel">
+        <a id="openStudio" href="/" target="_blank" rel="noopener">浏览论文 ↗</a>
+        <div id="jobStatus" aria-live="polite"></div>
+        <div id="videoArea" hidden>
+          <h3 id="lessonTitle"></h3>
+          <video id="video" controls preload="metadata" playsinline></video>
+          <div class="download-row">
+            <a id="downloadVideo" download="论文选段精读.mp4">↓ MP4</a
+            ><a id="downloadCaptions" download="字幕.srt">↓ 字幕</a
+            ><a id="downloadPlan" download="讲解脚本.json">↓ 脚本</a>
+          </div>
+          <div id="chapters"></div>
+          <details id="flowReplay" hidden>
+            <summary>流程步骤回看 · 点击定位并暂停</summary>
+            <div id="flowStepList"></div>
+          </details>
+          <details>
+            <summary>知识覆盖与原文证据</summary>
+            <div id="evidence"></div>
+          </details>
+        </div>
+        <div class="section-label history-label">
+          最近的视频 <span id="jobCount">0</span>
+        </div>
+        <div id="jobList"></div>
+      </aside>
+    </div>
+    <div id="toast" role="status" aria-live="polite" hidden></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
