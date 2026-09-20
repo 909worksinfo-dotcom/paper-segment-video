@@ -18,12 +18,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from . import papers, store, speech, text_selection
+from . import papers, store, speech, text_selection, chapters
 from .planner import Cancelled, create_plan
 from .render import render
 
 WEB = Path(__file__).resolve().parent.parent / "web"
 POOL = ThreadPoolExecutor(max_workers=1, thread_name_prefix="paper-video")
+CHAPTER_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="paper-chapter")
 CREATE_LOCK = threading.Lock()
 
 
@@ -32,6 +33,10 @@ async def lifespan(app):
     store.init()
     for job in store.jobs():
         if job["state"] not in {"ready", "failed", "cancelled"}:
+            if job.get("kind") == "chapter" and not job.get("cancel_requested") and job.get("recoveries", 0) < 3:
+                store.update_job(job["id"], state="queued", message="正在从已保存的章节进度恢复", recoveries=job.get("recoveries", 0) + 1)
+                CHAPTER_POOL.submit(chapters.run, job["id"])
+                continue
             store.update_job(
                 job["id"],
                 state="failed",
@@ -58,7 +63,7 @@ async def local_only(request: Request, call_next):
             return JSONResponse({"detail": "缺少客户端请求标记"}, status_code=403)
     # Older open tabs must also stop creating/retrying videos from the panel
     path = request.url.path
-    generation = path in {"/api/jobs", "/api/jobs/paste"} or (path.startswith("/api/jobs/") and path.endswith("/retry"))
+    generation = path in {"/api/jobs", "/api/jobs/paste", "/api/jobs/chapter"} or (path.startswith("/api/jobs/") and path.endswith("/retry"))
     if request.method == "POST" and generation and (request.headers.get("origin") or request.headers.get("sec-fetch-mode")):
         return JSONResponse({"detail": "请将选区引用到主会话，在对话框发送生成或重试指令"}, status_code=403)
     response = await call_next(request)
@@ -87,7 +92,8 @@ def health():
         "app": "paper-segment-video",
         "status": "ok",
         "version": "0.1.0",
-        "api_revision": 2,
+        "api_revision": 3,
+        "chapter_jobs": True,
         "pid": os.getpid(),
         "provider": "已配置的模型接口" if configured_api else "Codex 本地登录",
         "model_available": bool(os.environ.get("PAPER_VIDEO_MODEL"))
@@ -162,6 +168,12 @@ class SelectionRequest(BaseModel):
 class PasteRequest(BaseModel):
     text: str = Field(min_length=20, max_length=12000)
     document_id: str | None = Field(default=None, max_length=64)
+
+
+class ChapterRequest(BaseModel):
+    document_id: str = Field(min_length=1, max_length=64)
+    chapter: int = Field(ge=1, le=999, strict=True)
+    title: str | None = Field(default=None, min_length=1, max_length=120)
 
 
 def worker(job_id):
@@ -242,6 +254,11 @@ def text_layer(doc_id: str):
     return text_selection.layout(doc_id)
 
 
+@app.get("/api/documents/{doc_id}/chapters")
+def chapter_headings(doc_id: str):
+    return chapters.headings(store.document(doc_id))
+
+
 @app.post("/api/selections")
 def preview_selection(body: SelectionRequest):
     return resolve_selection(store.document(body.document_id), body)
@@ -273,6 +290,34 @@ def create_job(body: SelectionRequest):
 def paste_job(body: PasteRequest):
     doc, selected = papers.pasted_selection(body.text, body.document_id)
     return enqueue(doc, selected)
+
+
+@app.post("/api/jobs/chapter", status_code=202)
+def chapter_job(body: ChapterRequest):
+    doc = store.document(body.document_id)
+    title, fragments = chapters.extract(doc, body.chapter)
+    title = body.title or title
+    selected, voice = chapters.selection(fragments), speech.profile()
+    fingerprint = chapters.digest({"document": doc["id"], "fragments": fragments, "speech": voice, "title": title})
+    with CREATE_LOCK:
+        existing = store.jobs()
+        for value in existing:
+            if value.get("kind") == "chapter" and value.get("fingerprint") == fingerprint:
+                return value
+        if sum(j["state"] not in {"ready", "failed", "cancelled"} for j in existing) >= 6:
+            raise HTTPException(429, "本地队列已满（最多 6 个任务），请等待或取消已有任务")
+        job_id = uuid.uuid4().hex
+        manifest = chapters.initialize(store.ROOT / "jobs" / job_id, title, fragments)
+        value = {"id": job_id, "kind": "chapter", "chapter": body.chapter,
+                 "document_id": doc["id"], "selection": selected, "fingerprint": fingerprint,
+                 "created": time.time(), "state": "queued", "message": f"章节已分为 {len(manifest['parts'])} 段，正在排队生成",
+                 "title": title, "panel_path": "/?panel=1&job=" + job_id,
+                 "speech_speed": voice["speed"], "speech_label": voice["label"], "speech": voice,
+                 "chapter_progress": {"ready": 0, "total": len(manifest["parts"])},
+                 "cancel_requested": False, "recoveries": 0}
+        store.save_job(value)
+        CHAPTER_POOL.submit(chapters.run, job_id)
+    return value
 
 
 def enqueue(doc, selected):
@@ -347,6 +392,8 @@ def retry(job_id: str):
             >= 6
         ):
             raise HTTPException(429, "队列已满，请稍后重试")
+        if job.get("kind") == "chapter":
+            chapters.prepare_retry(job_id)
         result = store.update_job(
             job_id,
             state="queued",
@@ -354,7 +401,11 @@ def retry(job_id: str):
             cancel_requested=False,
             error=None,
         )
-        POOL.submit(worker, job_id)
+        if job.get("kind") == "chapter":
+            result = store.update_job(job_id, recoveries=0)
+            CHAPTER_POOL.submit(chapters.run, job_id)
+        else:
+            POOL.submit(worker, job_id)
         return result
 
 

@@ -11,7 +11,7 @@ def enabled(scene):
     return scene.get("flow", {}).get("mode", "none") != "none"
 
 
-def validate_visuals(scene):
+def validate_visuals(scene, allow_static=False):
     narration = scene["narration"]
     graph = scene.get("flow", {"mode": "none", "nodes": [], "edges": [], "steps": []})
     nodes, edges, steps = graph["nodes"], graph["edges"], graph["steps"]
@@ -27,7 +27,7 @@ def validate_visuals(scene):
     else:
         if (
             not 2 <= len(nodes) <= 6
-            or not 1 <= len(edges) <= 7
+            or not (0 if allow_static and graph["mode"] == "static" else 1) <= len(edges) <= 7
             or not 1 <= len(steps) <= 4
         ):
             raise ValueError("流程图需要 2–6 节点、1–7 条边、1–4 步")
@@ -54,7 +54,7 @@ def validate_visuals(scene):
             if not edge["label"].strip() or len(edge["label"]) > 16:
                 raise ValueError("流程连线缺少简短数据/动作标签")
             touched.update((edge["source"], edge["target"]))
-        if touched != ids:
+        if touched != ids and not (allow_static and graph["mode"] == "static" and not edges):
             raise ValueError("流程图存在无连接的节点")
         covered_nodes, covered_edges = set(), set()
         previous = -1

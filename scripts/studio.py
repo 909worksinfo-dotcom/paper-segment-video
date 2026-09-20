@@ -88,7 +88,7 @@ def main():
     )
     parser.add_argument(
         "action",
-        choices=["start", "status", "documents", "jobs", "explain", "paste", "job", "quote", "retry"],
+        choices=["start", "status", "documents", "jobs", "explain", "paste", "job", "quote", "retry", "chapters", "chapter"],
     )
     parser.add_argument("--port", type=int, default=default_port())
     parser.add_argument("--paper", type=Path)
@@ -98,6 +98,8 @@ def main():
     parser.add_argument("--bbox", type=float, nargs=4)
     parser.add_argument("--job-id")
     parser.add_argument("--quote-id")
+    parser.add_argument("--chapter", type=int)
+    parser.add_argument("--title")
     parser.add_argument(
         "--text-file", type=Path, help="UTF-8 原文文件；使用 - 从标准输入读取"
     )
@@ -167,6 +169,19 @@ def main():
                 request(args.port, "/jobs/" + args.job_id), ensure_ascii=False, indent=2
             )
         )
+    elif args.action == "chapters":
+        if not args.document:
+            parser.error("chapters 需要 --document")
+        print(json.dumps(request(args.port, "/documents/" + args.document + "/chapters"), ensure_ascii=False, indent=2))
+    elif args.action == "chapter":
+        if not args.document or not args.chapter:
+            parser.error("chapter 需要 --document 和 --chapter")
+        status = request(args.port, "/health")
+        if not status.get("chapter_jobs"):
+            raise SystemExit("当前服务尚未加载章节功能，请在任务完成后重启本地服务")
+        value = request(args.port, "/jobs/chapter", {"document_id": args.document, "chapter": args.chapter, "title": args.title})
+        value["panel_url"] = f"http://127.0.0.1:{args.port}" + value["panel_path"]
+        print(json.dumps(value, ensure_ascii=False, indent=2))
     elif args.action == "paste":
         if not args.text_file:
             parser.error("paste 需要 --text-file <UTF-8 文件>，或 --text-file -")

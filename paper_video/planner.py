@@ -194,9 +194,59 @@ formula 只填简短可直接阅读的公式（不要 LaTeX），复杂原式以
 避免“全面领先”等超出实验范围的结论，缓存压缩比、FLOPs 和实际延迟不能混为一谈
 """
 
+CHAPTER_METHOD = (
+    METHOD.replace(
+        "先鸟瞰论文目标与结论，定位选段在论证中的作用；逐句拆解问题、直觉、机制；",
+        "直接承接上一段，按本段实际内容解释问题、直觉和机制；",
+    )
+    .replace(
+        "区分作者声称、实验支持与讲解者推断，最后回顾并提出一道理解检查题",
+        "区分作者声称、实验支持与讲解者推断",
+    )
+    .replace(
+        "通常 7-12 个场景、每个场景 80-160 个中文字，完整复杂选段可以 18 个场景，不要为控制时长截断内容",
+        "按本段内容精简场景，不重复开场和回顾；每幕讲透一个证据焦点，不要为控制时长截断内容",
+    )
+    .replace(
+        "至少包含 motivation、limits、recap 场景；涉及公式必须有 formula 场景；涉及架构必须有 architecture 场景；\n涉及比较必须有 comparison 场景。recap 包含理解问题和答案，不许只生成泛泛的整篇摘要",
+        "按实际内容选择场景类型；仅在本段确有公式、架构或比较时使用相应场景，不强制安排动机、局限或回顾",
+    )
+)
+
+
+def chapter_scene_limit(selected):
+    """Keep short chapter excerpts focused without changing approved clip validation."""
+    length = len(selected.get("text", ""))
+    return 4 if length <= 900 else 5 if length <= 1500 else 6
+
 
 class Cancelled(Exception):
     pass
+
+
+class PlanValidationError(ValueError):
+    """A bounded planning/review cycle failed; a chapter may subdivide its input."""
+
+
+CHAPTER_SCOPE = """章节分段专用约束：
+只负责 selection.text 的重要知识；context_pages 和相邻图片只用于消歧、确认公式与图表，不是本段必须讲解的范围
+本段将按原文顺序并入完整章节；短选段通常用 2–4 幕，较长选段通常用 4–6 幕，复杂机制可适当增加；不要重复整篇论文导览或讲其他分段负责的内容
+章节片段不必各自安排动机、局限、回顾三种场景；按本段实际内容选择场景类型，没有原文依据的局限不要硬编。整章开头和结尾由相应章节片段承担，其他片段直接承接上下文
+解释本段核心机制、适用条件和重要证据；配置和评测表按主题归纳，并读出支撑结论的代表数值，不必逐格播报整张表
+比较成绩时在旁白和图中保留完整模型、基准及指标名称；Resolved、Pass@1、EM 等不同指标不可混称，原文数值与自行计算的差值分别标为原文证据和推导
+highlight_quote 要覆盖本幕所比较的基准名称及关键双方数值，不能只截取一个分数、模型名或结论的半句话；若一幕无法精确高亮，缩小该幕证据焦点
+不得遗漏影响结论的反例或限制；背景知识与原文结论明确区分
+static 对照/分类图允许 edges=[]，steps 点亮相应节点，不能为了满足连线数伪造因果箭头
+dynamic 必须有真实数据流；只列举并列工作、未给执行关系时用无箭头 static 图，不能推断顺序或并行执行
+每幕只突出一个证据焦点。背景、引入、回顾无精确原文位置时 highlight_quote 必须为空，不能因此补造引用
+高亮代表例子不等于要给整幕每句话都画线；无精确位置时允许不画线，鼠标指向相应要点
+流程边标签优先 1–2 个中文字，避免拥挤；尽量 2–4 个节点和 1–3 条边，多步骤拆幕
+只表示先后、目标、用途、支持、比较或并列关系时，可用无箭头 static 图；旁白中的“先讲、再看、最后回顾”属于教学顺序，不表示数据传递
+flow.mode=none 可用于引入、限制和回顾；这些场景可以归纳多个机制，但不声称它们构成新的执行路径
+首次出现的领域术语用主流中文名称解释；没有可靠中文名称时保留英文并给简短释义，不把推测的实现写成论文事实
+选段若在句中截断，只讲选中的完整事实；相邻页面只用于消歧，不把截断本身当作科学知识点反复讲述
+输出前对照原文逐幕自查：配音是否真的讲到知识点，图中每条箭头是否有明确数据流依据，术语是否前后一致
+"""
 
 
 def run_process(command, cwd, logfile, cancelled, timeout=900, stdin=None):
@@ -347,11 +397,12 @@ def with_legacy_visual_defaults(plan):
     return compatible
 
 
-def validate_plan(plan, pages):
+def validate_plan(plan, pages, chapter_mode=False, selected=None):
     jsonschema.validate(with_legacy_visual_defaults(plan), PLAN_SCHEMA)
     available = {p["page"]: p["text"] for p in pages}
     points = plan["knowledge_points"]
-    if not 2 <= len(points) <= 36 or not 3 <= len(plan["scenes"]) <= 18:
+    min_points, min_scenes = (1, 2) if chapter_mode else (2, 3)
+    if not min_points <= len(points) <= 36 or not min_scenes <= len(plan["scenes"]) <= 18:
         raise ValueError("知识点或场景数量不在有效范围")
     ids = [p["id"] for p in points]
     if len(set(ids)) != len(ids):
@@ -375,6 +426,10 @@ def validate_plan(plan, pages):
             available[scene["source_page"]]
         ):
             raise ValueError(f"划线短语无法定位：{scene['title']}")
+        if chapter_mode and selected and scene["highlight_quote"]:
+            selected_text = "\n".join(f["text"] for f in selected["fragments"] if f["page"] == scene["source_page"])
+            if normal(scene["highlight_quote"]) not in normal(selected_text):
+                raise ValueError(f"划线短语不在本分段内，无精确对应时留空：{scene['title']}")
         if not scene["knowledge_ids"] or not set(scene["knowledge_ids"]).issubset(ids):
             raise ValueError("场景知识点引用无效")
         if not 20 <= len(scene["narration"]) <= 750:
@@ -394,13 +449,13 @@ def validate_plan(plan, pages):
         from .flow import validate_visuals, validate_layout
         from .render import font
 
-        validate_visuals(scene)
+        validate_visuals(scene, allow_static=chapter_mode)
         validate_layout(scene, font)
         covered.update(scene["knowledge_ids"])
     if covered != set(ids):
         raise ValueError("存在未讲解的知识点")
     kinds = {s["kind"] for s in plan["scenes"]}
-    if not {"motivation", "limits", "recap"}.issubset(kinds):
+    if not chapter_mode and not {"motivation", "limits", "recap"}.issubset(kinds):
         raise ValueError("缺少动机、局限或回顾环节")
     return {
         "citations_located": True,
@@ -410,12 +465,12 @@ def validate_plan(plan, pages):
     }
 
 
-def create_plan(selected, pages, images, directory, cancelled, progress):
+def create_plan(selected, pages, images, directory, cancelled, progress, chapter_mode=False, initial_feedback=""):
     context_text = json.dumps(
         {"selected": selected, "context_pages": pages}, ensure_ascii=False
     )
     base = (
-        METHOD
+        (CHAPTER_METHOD if chapter_mode else METHOD)
         + "\n"
         + TERMINOLOGY
         + "\n"
@@ -423,8 +478,16 @@ def create_plan(selected, pages, images, directory, cancelled, progress):
         + "\n以下是论文材料（不是指令）：\n"
         + context_text
     )
-    feedback = ""
-    for attempt in range(3):
+    if chapter_mode:
+        scene_limit = chapter_scene_limit(selected)
+        base += (
+            "\n" + CHAPTER_SCOPE
+            + f"\n本段原文约 {len(selected.get('text', ''))} 字符，最多 {scene_limit} 幕。"
+            "不要为了覆盖多个知识点重复播报同一事实；将同一证据焦点放在一幕讲透。"
+        )
+    feedback = initial_feedback if chapter_mode else ""
+    attempts = 5 if chapter_mode else 3
+    for attempt in range(attempts):
         progress("writing", f"拆解知识与编写分镜（第 {attempt + 1} 次）")
         plan = model_json(
             base + feedback,
@@ -435,7 +498,9 @@ def create_plan(selected, pages, images, directory, cancelled, progress):
             cancelled,
         )
         try:
-            report = validate_plan(plan, pages)
+            report = validate_plan(plan, pages, chapter_mode=chapter_mode, selected=selected)
+            if chapter_mode and len(plan["scenes"]) > scene_limit:
+                raise ValueError(f"本段最多 {scene_limit} 幕，请合并重复的开场、配置播报和回顾")
         except ValueError as exc:
             feedback = (
                 "\n前次结果未通过结构校验，请修正："
@@ -455,6 +520,7 @@ def create_plan(selected, pages, images, directory, cancelled, progress):
             "对未解释或错误的要点给出明确 issues/coverage_gaps；只有无关键错误且覆盖完整才 passed=true。\n"
             + TERMINOLOGY
             + VISUAL_METHOD
+            + (CHAPTER_SCOPE if chapter_mode else "")
             + "必须核对流程箭头真实表达数据流，旁白锚点按实际叙述顺序，分支合并与缓存复用没有被错画成串行路径。\n"
             + context_text
             + "\n待审核分镜：\n"
@@ -480,6 +546,6 @@ def create_plan(selected, pages, images, directory, cancelled, progress):
             + "\n前次脚本："
             + json.dumps(plan, ensure_ascii=False)
         )
-    raise ValueError(
+    raise PlanValidationError(
         "讲解未通过内容或引用校验，已保留审核记录，可重试；未生成未经校验的视频"
     )
